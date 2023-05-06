@@ -6,26 +6,30 @@ class Env:
         self.state = 50
         self.max_state = 1e15
 
+    def reset(self):
+        self.state = 50
+        return self.state
+
     def step(self, action):
         next_state = 0
         cost = 0
         if action==1: # Replace
             next_state = self.sample_next_state(1)
-            cost = self.get_cost(1)
+            cost = self.get_reward(1)
         elif action==2: # Don't replace
             next_state = self.sample_next_state(self.state)
-            cost = self.get_cost(2)
+            cost = self.get_reward(2)
 
         self.state = next_state
 
         return next_state, cost
     
-    def get_cost(self, action):
+    def get_reward(self, action):
         if action==1:
             C = self.R + 1
         elif action==2:
-            C = self.state
-        return -C
+            C = 2 - 1/(self.state+1)
+        return -C # Reward is negative of cost
     
     def sample_next_state(self, state):
         next_state = np.random.poisson(state)
