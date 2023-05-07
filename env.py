@@ -6,6 +6,7 @@ class Env:
         self.R = R
         self.init_state = 1
         self.state = 1
+        self.n_actions = 2
 
     def reset(self):
         self.state = self.init_state
