@@ -1,44 +1,44 @@
 import numpy as np
 
+
 class Env:
     def __init__(self, R) -> None:
         self.R = R
-        self.state = 50
-        self.max_state = 1e15
+        self.init_state = 1
+        self.state = 1
 
     def reset(self):
-        self.state = 50
+        self.state = self.init_state
         return self.state
 
     def step(self, action):
-        next_state = 0
-        cost = 0
-        if action==1: # Replace
-            next_state = self.sample_next_state(1)
-            cost = self.get_reward(1)
-        elif action==2: # Don't replace
+        if action == 1:  # Replace
+            next_state = self.sample_next_state(self.init_state)
+            cost = self.get_reward(action)
+        elif action == 2:  # Don't replace
             next_state = self.sample_next_state(self.state)
-            cost = self.get_reward(2)
+            cost = self.get_reward(action)
 
         self.state = next_state
 
         return next_state, cost
-    
+
     def get_reward(self, action):
-        if action==1:
-            C = self.R + 1
-        elif action==2:
-            C = 2 - 1/(self.state+1)
-        return -C # Reward is negative of cost
-    
+        if action == 1:
+            C = self.R + 2 - 1 / self.init_state
+        elif action == 2:
+            C = 2 - 1 / self.state
+        return -C  # Reward is negative of cost
+
     def sample_next_state(self, state):
-        next_state = np.random.poisson(state)
-        # while next_state < self.max_state:
-        #     next_state = np.random.poisson(state)
+        next_state = np.random.poisson(state) + self.init_state
         return next_state
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     env = Env(5)
     for i in range(100):
-        print(env.step(np.random.randint(1, 3)))
+        if i % 10:
+            print(env.step(2))
+        else:
+            print(env.step(1))
