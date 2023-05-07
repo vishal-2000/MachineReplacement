@@ -26,9 +26,9 @@ class Env:
 
     def get_reward(self, action):
         if action == 0:
-            C = self.R + 2 - 1 / self.init_state
+            C = self.R + 10 - 8 / self.init_state
         elif action == 1:
-            C = 2 - 1 / self.state
+            C = 10 - 8 / self.state
         return -C  # Reward is negative of cost
 
     def sample_next_state(self, state):
