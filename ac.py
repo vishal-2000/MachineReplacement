@@ -105,13 +105,13 @@ for eps in range(n_episodes):
 
         if steps == max_steps_per_episode - 1:
             state = torch.tensor([state], dtype=torch.float32, device=device).unsqueeze(0)
-            Qval, _ = model_policy(state)
+            _ , Qval= model_policy(state)
             Qval = Qval.cpu().detach().numpy()[0, 0]
             all_rewards.append(np.sum(rewards))
 
     Qvals = np.zeros_like(values)
     for t in reversed(range(len(rewards))):
-        Qval = rewards[t] + GAMMA*Qval
+        Qval = rewards[t] + GAMMA*values[t]
         Qvals[t] = Qval
 
     values = torch.FloatTensor(values)

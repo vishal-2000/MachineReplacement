@@ -20,22 +20,26 @@ run = wandb.init(project='actorcritic_MachineReplacement', name = NAME, id = ID)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 ic(device)
 
-# %%
 class PolicyNetwork(nn.Module):
     def __init__(self, n_obs, n_act):
         super(PolicyNetwork, self).__init__()
 
-        self.layer = nn.Linear(n_obs, 16)
-        self.actor = nn.Linear(16, n_act)
-        self.critic = nn.Linear(16, 1)
+        self.num_actions = n_act
+        self.critic_linear1 = nn.Linear(n_obs, 16)
+        self.critic_linear2 = nn.Linear(16, 1)
+
+        self.actor_linear1 = nn.Linear(n_obs, 16)
+        self.actor_linear2 = nn.Linear(16, n_act)
 
     def forward(self, state):
-        x = self.layer(state)
-        x = F.relu(x)
-        action_prob = F.softmax(self.actor(x), dim=-1)
-        state_vals = self.critic(x)
+        value = F.relu(self.critic_linear1(state))
+        value = self.critic_linear2(value)
 
-        return action_prob, state_vals
+        policy_dist = F.relu(self.actor_linear1(state))
+        policy_dist = F.softmax(self.actor_linear2(policy_dist), dim=1)
+
+        return policy_dist, value
+
 
 # %%
 n_obs = 1
@@ -45,22 +49,10 @@ model_policy = PolicyNetwork(n_obs=n_obs, n_act=n_act).to(device)
 optimizer = optim.Adam(model_policy.parameters(), lr=3e-2)
 steps_done = 0
 
-def select_action(state):
-    global steps_done
-    steps_done += 1
-    with torch.no_grad():
-        action_probs, state_val = model_policy(state)
-        action_dist = torch.distributions.Categorical(action_probs)
-
-        action = action_dist.sample()
-        logprob = action_dist.log_prob(action)
-
-        return action, logprob, state_val
-
 # %%
 max_steps_per_episode = 500
-n_episodes = 400
-GAMMA = 1
+n_episodes = 2000
+GAMMA = 0.001
 R = 35 # Cost of replacement of a machine
 
 wandb.config.update({
@@ -106,7 +98,7 @@ for eps in range(n_episodes):
 
         if steps == max_steps_per_episode - 1:
             state = torch.tensor([state], dtype=torch.float32, device=device).unsqueeze(0)
-            Qval, _ = model_policy(state)
+            _, Qval = model_policy(state)
             Qval = Qval.cpu().detach().numpy()[0, 0]
             all_rewards.append(np.sum(rewards))
 
@@ -119,13 +111,14 @@ for eps in range(n_episodes):
     Qvals = torch.FloatTensor(Qvals)
     logprobs = torch.stack(logprobs)
 
-    advantage = Qvals - values
+    advantage = Qvals
     advantage = advantage.to(device)
     actor_loss = (-logprobs*advantage).mean()
-    critic_loss = 0.5*advantage.pow(2).mean()
+    critic_loss = F.smooth_l1_loss(values, Qvals)
 
     # ic(actor_loss, critic_loss, entropy_term)
     # ac_loss = actor_loss + critic_loss + 0.001*entropy_term
+
     ac_loss = actor_loss + critic_loss
 
     wandb.log({'loss': ac_loss, 'Current_return': all_rewards[-1], 'n_episode': eps}) #, 'batch': t})
@@ -155,7 +148,7 @@ def evaluate_policy(env: Env, policy: torch.nn.Module):
             curr_state = torch.tensor(
                 [next_state], dtype=torch.float32, device=device
             ).unsqueeze(0)
-        episode_reward /= NUM_STEPS
+        episode_reward /= max_steps_per_episode
         sum_rewards += episode_reward
     sum_rewards /= n_episodes
     return sum_rewards
@@ -163,7 +156,7 @@ def evaluate_policy(env: Env, policy: torch.nn.Module):
 def print_policy(policy: torch.nn.Module):
     for s in range(1, 101):
         inp = torch.tensor([s], dtype=torch.float32, device=device).unsqueeze(0)
-        print(policy(inp).max(1)[1].item(), end=" ")
+        print(policy(inp)[0].max(1)[1].item(), end=" ")
         if s % 25 == 0:
             print()
 
