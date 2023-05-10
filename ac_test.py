@@ -58,7 +58,7 @@ def select_action(state):
         return action, logprob, state_val
 
 # %%
-max_steps_per_episode = 50
+max_steps_per_episode = 500
 n_episodes = 400
 GAMMA = 1
 R = 35 # Cost of replacement of a machine
@@ -141,14 +141,15 @@ for eps in range(n_episodes):
 
 def evaluate_policy(env: Env, policy: torch.nn.Module):
     sum_rewards = 0
+    n_episodes = 20
     for episode_num in range(n_episodes):
         episode_reward = 0
         curr_state = env.reset()
         curr_state = torch.tensor(
             [curr_state], dtype=torch.float32, device=device
         ).unsqueeze(0)
-        for step_num in range(NUM_STEPS):
-            action = policy(curr_state).max(1)[1].item()
+        for step_num in range(max_steps_per_episode):
+            action = policy(curr_state)[0].max(1)[1].item()
             next_state, reward = env.step(action)
             episode_reward += reward
             curr_state = torch.tensor(
@@ -167,16 +168,14 @@ def print_policy(policy: torch.nn.Module):
             print()
 
 # %%
-NUM_STEPS = n_episodes*max_steps_per_episode
-
 best_reward = -torch.inf
 best_policy = PolicyNetwork(n_obs, n_act)
-for i in tqdm(range(100, NUM_STEPS, 100), desc="Evaluating", leave=False):
+for i in tqdm(range(100, n_episodes, 100), desc="Evaluating", leave=False):
     LOAD_PATH = f'./checkpoints/AC/AC_{i}.pt'
     policy_net = PolicyNetwork(n_obs, n_act).to(device)
     checkpoint = torch.load(LOAD_PATH)
     policy_net.load_state_dict(checkpoint)
-    reward = evaluate_policy(Env, policy_net)
+    reward = evaluate_policy(env, policy_net)
     ic("Reward (over policy)", reward, i)
     if reward > best_reward:
         best_reward = reward
