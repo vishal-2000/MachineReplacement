@@ -66,7 +66,7 @@ class DQN(nn.Module):
 
 # %%
 torch.cuda.empty_cache()
-env = Env(R=5)
+env = Env(R=35)
 
 
 # %%
@@ -147,7 +147,7 @@ def optimize_model(timestep=0, batch_num=0, reward=0):
 
 # %%
 
-num_episodes = 20
+num_episodes = 50
 num_time_per_episode = 500
 
 # wandb.config.update({
