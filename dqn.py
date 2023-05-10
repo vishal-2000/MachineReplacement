@@ -147,8 +147,8 @@ def optimize_model(timestep=0, batch_num=0, reward=0):
 
 # %%
 
-num_episodes = 200
-num_time_per_episode = 50
+num_episodes = 20
+num_time_per_episode = 500
 
 # wandb.config.update({
 #     'max_timesteps': num_episodes*num_time_per_episode,
@@ -207,8 +207,8 @@ for i in range(num_episodes):
 
 
 # %%
-import matplotlib.pyplot as plt
-plt.plot(timestep_rec, loss)
+# import matplotlib.pyplot as plt
+# plt.plot(timestep_rec, loss)
 
 
 def evaluate_policy(env: Env, policy: torch.nn.Module):
@@ -240,10 +240,10 @@ def print_policy(policy: torch.nn.Module):
             print()
 
 best_reward = -torch.inf
-best_policy = DQN()
+best_policy = DQN(n_observations, n_actions)
 for i in tqdm(range(100, num_time_per_episode, 100), desc="Evaluating", leave=False):
     LOAD_PATH = f'./checkpoints/DQN_{i}.pt'
-    policy_net = DQN().to(device)
+    policy_net = DQN(n_observations, n_actions).to(device)
     checkpoint = torch.load(LOAD_PATH)
     policy_net.load_state_dict(checkpoint)
     reward = evaluate_policy(env, policy_net)
