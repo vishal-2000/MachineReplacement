@@ -198,8 +198,8 @@ for i in range(num_episodes):
             target_net_state_dict[key] = policy_net_state_dict[key]*TAU + target_net_state_dict[key]*(1-TAU)
         target_net.load_state_dict(target_net_state_dict)
 
-        if i%100 == 0:
-            SAVE_PATH = './checkpoints/DQN_{}.pt'.format(i)
+        if ((i*num_time_per_episode) + j)%100 == 0:
+            SAVE_PATH = './checkpoints/DQN_{}.pt'.format((i*num_time_per_episode) + j)
             target_net.load_state_dict(policy_net.state_dict())
             torch.save(policy_net.state_dict(), SAVE_PATH)
 
